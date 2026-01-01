@@ -81,16 +81,16 @@ export async function GET(request: NextRequest) {
         //   voiceId: VOICE_ID,
         // },
         firstMessage: SLOT_PROMPTS[slot],
-        model: {
-          provider: "openai",
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: `You are a personal productivity coach making a scheduled check-in call. Be friendly, concise, and encouraging. ${SLOT_PROMPTS[slot]}`,
-            },
-          ],
-        },
+        // model: {
+        //   provider: "openai",
+        //   model: "gpt-4o-mini",
+        //   messages: [
+        //     {
+        //       role: "system",
+        //       content: `You are a personal productivity coach making a scheduled check-in call. Be friendly, concise, and encouraging. ${SLOT_PROMPTS[slot]}`,
+        //     },
+        //   ],
+        // },
       },
     });
 
