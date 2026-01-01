@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VapiClient } from "@vapi-ai/server-sdk";
 
-const VAPI_PUBLIC_KEY = "0ec6a5ad-e004-4ca1-a0cf-cb586cb54efd";
+const VAPI_PHONE_NUMBER_ID = "e4511439-4772-4b31-ae08-1bc1f8a7ca5a";
 const VOICE_ID = "AMagyyApPEVuxcHAR8xR";
 
 // Slot definitions with prompts for each time of day
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const vapi = new VapiClient({ token: apiKey });
 
     const call = await vapi.calls.create({
-      phoneNumberId: VAPI_PUBLIC_KEY,
+      phoneNumberId: VAPI_PHONE_NUMBER_ID,
       customer: {
         number: phoneNumber,
       },
