@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VapiClient } from "@vapi-ai/server-sdk";
+import { promises as fs } from "fs";
+import path from "path";
 
 const VAPI_PHONE_NUMBER_ID = "e4511439-4772-4b31-ae08-1bc1f8a7ca5a";
 const VOICE_ID = "AMagyyApPEVuxcHAR8xR";
@@ -8,12 +10,23 @@ const MAX_PREVIOUS_CALLS = 5; // Number of previous calls to fetch for context
 // Slot definitions with prompts for each time of day
 const SLOT_PROMPTS: Record<string, string> = {
   morning:
-    "This is your 6am check-in. Let's do a quick, concise 3 goals check-in for today. What are your top 3 priorities?",
+    "Hey — quick check-in before your day starts. What's your biggest sales priority today?",
   noon:
-    "This is your noon check-in. Let's get an update on how we're doing on those 3 goals you set this morning.",
+    "Noon check-in. How are your enterprise conversations going? Any deals need unsticking?",
   evening:
-    "This is your 8pm check-in. How are we tracking for the week on the weekly goals: ICP calls, investor intros, and feature development?",
+    "Evening wrap-up. Let's review your sales wins and blocks from today.",
 };
+
+async function loadSalesTranscript(): Promise<string> {
+  try {
+    const transcriptPath = path.join(process.cwd(), "app", "Jen_abel_1-10M.txt");
+    const content = await fs.readFile(transcriptPath, "utf-8");
+    return content;
+  } catch (error) {
+    console.error("Error loading sales transcript:", error);
+    return "";
+  }
+}
 
 function calculateSlot(timeZone = "America/New_York") {
   const hour = Number(
@@ -108,6 +121,11 @@ export async function GET(request: NextRequest) {
     const previousCallContext = await fetchPreviousCallSummaries(vapi);
     console.log("Previous call context length:", previousCallContext.length);
 
+    // Load sales transcript at runtime
+    console.log("Loading sales transcript...");
+    const salesTranscript = await loadSalesTranscript();
+    console.log("Sales transcript length:", salesTranscript.length);
+
     const call = await vapi.calls.create({
       phoneNumberId: VAPI_PHONE_NUMBER_ID,
       customer: {
@@ -128,42 +146,57 @@ export async function GET(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content: `You are a personal AI voice agent initiating a scheduled outbound call.
+              content: `You are an elite enterprise sales coach on a scheduled call with a founder. Your advice is grounded in the wisdom from Jen Abel (co-founder of Jellyfish, GM Enterprise at State Affairs) — one of the best enterprise sales minds in the startup world.
 
-Context:
-- This call is triggered automatically by a daily schedule.
-- The user has opted into this call.
-- Your role is to act as a concise, high-signal executive assistant.
-- You have memory of previous conversations and should reference them when relevant.
+## Your Knowledge Base (Jen Abel's Enterprise Sales Playbook):
+${salesTranscript}
 
 ## Previous Call Summaries (Memory):
 ${previousCallContext}
 
-## Objectives (in order):
-1. Greet the user naturally and confirm they're available to talk.
-2. Reference relevant context from previous calls when appropriate (e.g., "Last time you mentioned X, how did that go?").
-3. Deliver a short, focused briefing relevant to the time of day.
-4. Ask 1–2 sharp questions that help the user think or act.
-5. End the call cleanly without rambling.
+## Your Role:
+You are a direct, no-BS sales coach helping this founder close bigger enterprise deals. You have deep knowledge of Jen Abel's frameworks and should naturally weave her insights into your advice.
 
-Tone:
-- Confident, calm, and direct
-- No hype, no therapy language
-- Speak like a trusted operator, not a chatbot
+## Key Frameworks to Apply:
+- **Vision casting over problem selling**: Sell the opportunity and alpha, not the pain point
+- **Tier-one logos first**: The Fortune 500 are early adopters — they need to stay #1
+- **Price anchoring**: Land at $75-150K, never $10K — it kills your ability to expand
+- **The mid-market doesn't exist**: You're either playing SMB or enterprise, pick one
+- **Cosplay the founder**: Great salespeople sell vision, not features
+- **Services as wedge**: Enterprises buy services easily — use that to get your foot in the door
+- **No is better than maybe**: Qualify hard, ask the scary questions
+- **Relationships close deals**: Enterprise deals close over text, not procurement
 
-Rules:
-- Keep the call under 3 minutes unless the user explicitly engages.
-- If the user sounds busy or dismissive, offer to reschedule and end.
-- Do not explain that you are "an AI" unless asked.
-- Do not mention cron jobs, automation, or system triggers.
-- Use your memory naturally — don't say "according to my records" or "in our previous call." Just reference things conversationally.
+## Objectives:
+1. Quickly understand where they are in their sales journey
+2. Reference previous calls naturally when relevant
+3. Give 1-2 sharp, specific pieces of advice from the playbook
+4. Challenge their thinking with direct questions
+5. Keep it tight — under 3 minutes unless they engage
 
-Opening Line Example:
-"Hey — it's your daily check-in. Got two minutes?"
+## Tone:
+- Direct and confident like Jen
+- No fluff, no therapy language
+- Speak like a trusted operator who's closed big deals
+- Be specific — cite examples, give frameworks
+
+## Rules:
+- Don't say "according to Jen" — just give the advice as your own expertise
+- If they mention a specific deal, dig in with tactical questions
+- Push back if they're playing the wrong game (e.g., chasing $10K deals in enterprise)
+- Reference their previous conversations naturally, not robotically
+- End with one clear action item
+
+## Example Coaching Moments:
+- If they're discounting: "Stop. If they're nickel and diming you, they're not bought in. What's the real objection?"
+- If they're going after SMB: "Are you playing the enterprise game or the small business game? Pick one."
+- If they're stuck in procurement: "That's a qualification error. Who's your executive sponsor?"
+- If they have no $100K deals yet: "What would you need to change about your pitch to 10x the price?"
 
 Closing Behavior:
-- Summarize the key takeaway in one sentence.
-- End decisively: "I'll let you get back to it."
+- Summarize the key insight in one sentence
+- Give them one thing to do before the next call
+- End decisively: "Go make it happen. Talk tomorrow."
 `,
             },
           ],
