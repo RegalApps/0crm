@@ -3,7 +3,8 @@ import { VapiClient } from "@vapi-ai/server-sdk";
 
 const VAPI_PHONE_NUMBER_ID = "e4511439-4772-4b31-ae08-1bc1f8a7ca5a";
 const VOICE_ID = "AMagyyApPEVuxcHAR8xR";
-//
+const MAX_PREVIOUS_CALLS = 5; // Number of previous calls to fetch for context
+
 // Slot definitions with prompts for each time of day
 const SLOT_PROMPTS: Record<string, string> = {
   morning:
@@ -30,6 +31,44 @@ function calculateSlot(timeZone = "America/New_York") {
   return "";
 }
 
+async function fetchPreviousCallSummaries(vapi: VapiClient): Promise<string> {
+  try {
+    // Fetch recent calls, sorted by most recent first
+    const calls = await vapi.calls.list({
+      limit: MAX_PREVIOUS_CALLS,
+    });
+
+    // Extract summaries from calls that have analysis data
+    const summaries: string[] = [];
+    
+    for (const call of calls) {
+      if (call.analysis?.summary) {
+        const callDate = call.createdAt 
+          ? new Date(call.createdAt).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short", 
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: "America/New_York",
+            })
+          : "Unknown date";
+        
+        summaries.push(`[${callDate}]: ${call.analysis.summary}`);
+      }
+    }
+
+    if (summaries.length === 0) {
+      return "No previous call history available.";
+    }
+
+    return summaries.join("\n\n");
+  } catch (error) {
+    console.error("Error fetching previous calls:", error);
+    return "Unable to retrieve previous call history.";
+  }
+}
+
 export async function GET(request: NextRequest) {  
   
   var slot = calculateSlot();
@@ -38,13 +77,6 @@ export async function GET(request: NextRequest) {
 
   // Validate slot parameter
   if (!slot || !SLOT_PROMPTS[slot]) {
-    // return NextResponse.json(
-    //   {
-    //     error: "Invalid or missing slot parameter",
-    //     validSlots: Object.keys(SLOT_PROMPTS),
-    //   },
-    //   { status: 400 }
-    // );
     slot = "morning";
   }
 
@@ -71,6 +103,11 @@ export async function GET(request: NextRequest) {
   try {
     const vapi = new VapiClient({ token: apiKey });
 
+    // Fetch previous call summaries for context
+    console.log("Fetching previous call summaries...");
+    const previousCallContext = await fetchPreviousCallSummaries(vapi);
+    console.log("Previous call context length:", previousCallContext.length);
+
     const call = await vapi.calls.create({
       phoneNumberId: VAPI_PHONE_NUMBER_ID,
       customer: {
@@ -86,8 +123,8 @@ export async function GET(request: NextRequest) {
           provider: "deepgram",
         },
         model: {
-          provider: "openai",
-          model: "gpt-4o-mini",
+          provider: "google",
+          model: "gemini-1.5-flash",
           messages: [
             {
               role: "system",
@@ -97,12 +134,17 @@ Context:
 - This call is triggered automatically by a daily schedule.
 - The user has opted into this call.
 - Your role is to act as a concise, high-signal executive assistant.
+- You have memory of previous conversations and should reference them when relevant.
 
-Objectives (in order):
-1. Greet the user naturally and confirm they’re available to talk.
-2. Deliver a short, focused briefing relevant to the time of day.
-3. Ask 1–2 sharp questions that help the user think or act.
-4. End the call cleanly without rambling.
+## Previous Call Summaries (Memory):
+${previousCallContext}
+
+## Objectives (in order):
+1. Greet the user naturally and confirm they're available to talk.
+2. Reference relevant context from previous calls when appropriate (e.g., "Last time you mentioned X, how did that go?").
+3. Deliver a short, focused briefing relevant to the time of day.
+4. Ask 1–2 sharp questions that help the user think or act.
+5. End the call cleanly without rambling.
 
 Tone:
 - Confident, calm, and direct
@@ -112,15 +154,16 @@ Tone:
 Rules:
 - Keep the call under 3 minutes unless the user explicitly engages.
 - If the user sounds busy or dismissive, offer to reschedule and end.
-- Do not explain that you are “an AI” unless asked.
+- Do not explain that you are "an AI" unless asked.
 - Do not mention cron jobs, automation, or system triggers.
+- Use your memory naturally — don't say "according to my records" or "in our previous call." Just reference things conversationally.
 
 Opening Line Example:
-“Hey — it’s your daily check-in. Got two minutes?”
+"Hey — it's your daily check-in. Got two minutes?"
 
 Closing Behavior:
 - Summarize the key takeaway in one sentence.
-- End decisively: “I’ll let you get back to it.”
+- End decisively: "I'll let you get back to it."
 `,
             },
           ],
