@@ -81,6 +81,9 @@ export async function GET(request: NextRequest) {
           voiceId: VOICE_ID,
         },
         firstMessage: SLOT_PROMPTS[slot],
+        transcriber: {
+          provider: "deepgram",
+        },
         model: {
           provider: "openai",
           model: "gpt-4o-mini",
