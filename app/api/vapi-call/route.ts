@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
   
   const slot = calculateSlot();
 
+  console.log("slot", slot);
+
   // Validate slot parameter
   if (!slot || !SLOT_PROMPTS[slot]) {
     return NextResponse.json(
@@ -53,6 +55,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  console.log("phoneNumber", phoneNumber);
+
   const apiKey = process.env.VAPI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -60,6 +64,8 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  console.log("apiKey", apiKey);
 
   try {
     const vapi = new VapiClient({ token: apiKey });
