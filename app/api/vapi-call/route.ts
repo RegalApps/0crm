@@ -27,7 +27,7 @@ function calculateSlot(timeZone = "America/New_York") {
   if (hour === 13) return "noon";
   if (hour === 21) return "evening";
 
-  return "unknown";
+  return "";
 }
 
 export async function GET(request: NextRequest) {  
