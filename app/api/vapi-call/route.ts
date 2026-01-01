@@ -14,9 +14,25 @@ const SLOT_PROMPTS: Record<string, string> = {
     "This is your 8pm check-in. How are we tracking for the week on the weekly goals: ICP calls, investor intros, and feature development?",
 };
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const slot = searchParams.get("slot");
+function calculateSlot(timeZone = "America/New_York") {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone,
+    }).format(new Date())
+  );
+
+  if (hour === 7) return "morning";
+  if (hour === 13) return "noon";
+  if (hour === 21) return "evening";
+
+  return "unknown";
+}
+
+export async function GET(request: NextRequest) {  
+  
+  const slot = calculateSlot();
 
   // Validate slot parameter
   if (!slot || !SLOT_PROMPTS[slot]) {
