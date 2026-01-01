@@ -32,19 +32,20 @@ function calculateSlot(timeZone = "America/New_York") {
 
 export async function GET(request: NextRequest) {  
   
-  const slot = calculateSlot();
+  var slot = calculateSlot();
 
   console.log("slot", slot);
 
   // Validate slot parameter
   if (!slot || !SLOT_PROMPTS[slot]) {
-    return NextResponse.json(
-      {
-        error: "Invalid or missing slot parameter",
-        validSlots: Object.keys(SLOT_PROMPTS),
-      },
-      { status: 400 }
-    );
+    // return NextResponse.json(
+    //   {
+    //     error: "Invalid or missing slot parameter",
+    //     validSlots: Object.keys(SLOT_PROMPTS),
+    //   },
+    //   { status: 400 }
+    // );
+    slot = "morning";
   }
 
   const phoneNumber = process.env.PHONE_NUMBER;
