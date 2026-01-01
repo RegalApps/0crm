@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
         number: phoneNumber,
       },
       assistant: {
-        voice: {
-          provider: "11labs",
-          voiceId: VOICE_ID,
-        },
+        // voice: {
+        //   provider: "11labs",
+        //   voiceId: VOICE_ID,
+        // },
         firstMessage: SLOT_PROMPTS[slot],
         model: {
           provider: "openai",
