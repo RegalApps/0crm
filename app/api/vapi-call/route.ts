@@ -148,9 +148,6 @@ export async function GET(request: NextRequest) {
               role: "system",
               content: `You are an elite enterprise sales coach on a scheduled call with a founder. Your advice is grounded in the wisdom from Jen Abel (co-founder of Jellyfish, GM Enterprise at State Affairs) — one of the best enterprise sales minds in the startup world.
 
-## Your Knowledge Base (Jen Abel's Enterprise Sales Playbook):
-${salesTranscript}
-
 ## Previous Call Summaries (Memory):
 ${previousCallContext}
 
