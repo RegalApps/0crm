@@ -3,7 +3,7 @@ import { VapiClient } from "@vapi-ai/server-sdk";
 
 const VAPI_PHONE_NUMBER_ID = "e4511439-4772-4b31-ae08-1bc1f8a7ca5a";
 const VOICE_ID = "AMagyyApPEVuxcHAR8xR";
-
+//
 // Slot definitions with prompts for each time of day
 const SLOT_PROMPTS: Record<string, string> = {
   morning:
